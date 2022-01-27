@@ -111,7 +111,7 @@ function textToButton(){
       textSize(fontSize);
       fill(0);
       textAlign(LEFT, TOP);
-      textFont(myFont);
+      // textFont(myFont);
       text(textProperties[i].word, textProperties[i].x, textProperties[i].y)
 
     if((textProperties[i].xSet === true)&&(textProperties[i].ySet === true)){

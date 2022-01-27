@@ -16,7 +16,7 @@ let triangleSize;
 let myFont;
 
 function preload(){
-    myFont = loadFont(`assets/WonderType-Regular.otf`);
+
 }
 
 function setup() {
@@ -111,7 +111,6 @@ function textToButton(){
       textSize(fontSize);
       fill(0);
       textAlign(LEFT, TOP);
-      textFont(myFont);
       text(textProperties[i].word, textProperties[i].x, textProperties[i].y)
 
     if((textProperties[i].xSet === true)&&(textProperties[i].ySet === true)){
