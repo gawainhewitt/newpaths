@@ -20,7 +20,7 @@ body {
 @media (min-aspect-ratio: 3/2) {
   .containerclass{
     position: relative;
-    width: 48%;
+    width: 100%;
     display: block;
     margin-left: auto;
     margin-right: auto;
@@ -30,7 +30,7 @@ body {
 
 @media (min-aspect-ratio: 16/17) and (max-aspect-ratio: 3/2) {
   .containerclass{
-    width: 60%;
+    width: 100%;
     display: block;
     margin-left: auto;
     margin-right: auto;
