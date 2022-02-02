@@ -15,10 +15,27 @@ let framesPerSecond = 60;
 let started = false; //have we invoked Tone.start() and left the info screen?
 let interfaceState = 0; // 0 displays the text loading, 1 is a button, 2 is info screen, 3 is error loading sound to buffer
 
-
+var buttonState = false;
+var whichSound; // which of the samples?
+var theSample; //current sample
+var theVolume = -6;
+const player = new Tone.Player().toDestination();
+const toneWaveForm = new Tone.Waveform();
+toneWaveForm.size = 128;
+player.connect(toneWaveForm);
+var buffer0;
+var buffer1;
+var usedSounds = new Array;
+var cnvDimension;
+var bufferToPlay = buffer1;
+var lastBuffer;
+var currentBuffer;
+var numberOfSamples = 17;
+let visualisationSize;
+let welcome = 0;
 
 function preload(){
-
+    chooseSample();
 }
 
 function setup() {
@@ -31,7 +48,33 @@ function setup() {
   makeSquare();
   setupTouch();
   // pixelDensity(1)
+  player.set(
+    {
+      "mute": false,
+      "volume": 0,
+      "autostart": false,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "loop": false,
+      "playbackRate": 1,
+      "reverse": false,
+      "onstop": reload
+    }
+  );
+  visualisationSize = height*2;
+welcomeScreen();
 }
+
+function welcomeScreen(){
+  // welcome = 2;
+
+  if(welcome === 0){
+      console.log("in welcome screen 1");
+  }else if(welcome === 1){
+      console.log("in welcome screen 2");
+  }
+}
+
 
 function setupCanvas(){
   let masterDiv = document.getElementById("container");
@@ -43,9 +86,60 @@ function setupCanvas(){
   cnv.parent('p5parent'); //put the canvas in a div with this id if needed - this also needs to be sized
 }
 
+let visualisationX, visualisationY, visualisationWidth;
+
 function draw() {
-  background(230);
-  textToButton();
+  if(welcome == 2){
+    background(230);
+    visualisationX = width/8;
+    visualisationY = height/2;
+    visualisationWidth = (width/8)*6;
+    if(interfaceState === 0){
+      fill(150);
+      textAlign(CENTER, CENTER);
+      textSize(cnvDimension/20);
+      text("Loading", width/2, height/2);
+    }else if(interfaceState === 1){
+      background(230);
+      textToButton();
+    }else if(interfaceState === 2){
+      //visualisation
+      let x = visualisationX;
+      let y = visualisationY;
+      let startX = x;
+      let startY = y;
+      let endX;
+      let endY;
+      let visualisation = toneWaveForm.getValue();
+      textAlign(LEFT, TOP);
+      textSize(fontSize);
+      for(let i = 0; i < visualisation.length-1; i++){
+          // point(x, y + (visualisation[i]*visualisationSize));
+          // x = x + rectangleWidth/visualisation.length;
+
+          startY = y + (visualisation[i]*visualisationSize);
+          endX = startX + visualisationWidth/visualisation.length;
+          endY = y + (visualisation[i+1]*visualisationSize);
+
+          // line(startX, startY, endX, endY);
+          text(words[i%words.length],startX, startY);
+          if(i < visualisation.length - 10){
+            startX = startX + visualisationWidth/visualisation.length;
+          }
+      }
+    }else if(interfaceState === 3){
+      noStroke();
+      fill(buttonColour);
+      fill(0);
+      textAlign(CENTER, CENTER);
+      textSize(cnvDimension/30);
+      text("Network Problems, click to try again", visualisationX, visualisationY);
+    }
+  }else{
+    background(230);
+    textAlign(CENTER, CENTER);
+    text(`welcome screen ${welcome+1}`, width/2, height/2);
+  }
 }
 
 function setupTouch(){
@@ -55,40 +149,22 @@ function setupTouch(){
 }
 
 function handleClick() {
-  if(!started){
-      Tone.start();
-      started = true;
-      interfaceState = 2;
-  }else if(interfaceState === 2){
-      interfaceState = 1;
-  }else if(interfaceState === 3){
-      console.log("network problems click");
-      interfaceState = 0;
-      assignSoundToPlayer();
+  if(welcome === 2){
+    if(interfaceState === 1){
+        let d = dist(mouseX, mouseY, width/2, height/2);
+        if (d < ((squareProperties.size/6)*5)/2) {
+            buttonPressed();
+            buttonState = true;
+        }
+    }else if(interfaceState === 3){
+            console.log("network click");
+            interfaceState = 0;
+            assignSoundToPlayer();
+    }
   }else{
-      let d = dist(mouseX, mouseY, loadButton.x, loadButton.y);
-      if (d < buttonRadius/2) {
-          debounce(loadButtonPressed(), 200);
-          loadButton.state = true;
-      }
-      if(Tone.UserMedia.supported){
-          let d4 = dist(mouseX, mouseY, recordButton.x, recordButton.y);
-          if (d4 < buttonRadius/2) {
-              debounce(recordButtonPressed(), 200);
-          }
-      }
-      if(uneffectedSongPlayer.loaded === true){
-          let d2 = dist(mouseX, mouseY, playButton.x, playButton.y);
-          if (d2 < buttonRadius) {
-              debounce(playSong(), 200);
-          }
-      }
-      for(let i = 0; i < numberOfEffectButtons; i++){
-          let d3 = dist(mouseX, mouseY, effectButtons[i].x, effectButtons[i].y);
-          if (d3 < buttonRadius/2) {
-              debounce(effectButtonPressed(i), 200);
-          }
-      }
+    welcome = welcome +1;
+    Tone.start();
+    welcomeScreen();
   }
 }
 
@@ -204,4 +280,93 @@ function textToButton(){
         text("CLICK ME", width/2, height/2);
     }
   }
+}
+
+function buttonPressed() {
+  player.start();
+  lastBuffer = currentBuffer;
+  console.log(`lastBuffer = ${lastBuffer}`);
+  console.log("click");
+  interfaceState = 2;
+  chooseSample();
+  }
+
+
+function getRndInteger(min, max) {
+  return Math.floor(Math.random() * (max - min +1) ) + min;
+}
+
+function chooseSample(){
+  console.log(`usedSounds = ${usedSounds}`);
+  if (usedSounds.length === numberOfSamples){
+      console.log(`array full`);
+      usedSounds = [];
+  }
+
+  do{
+      whichSound = getRndInteger(1, numberOfSamples);
+  }while(haveWeUsedSound(whichSound));
+
+  usedSounds.push(whichSound);
+  console.log(`whichSound = ${whichSound}`);
+  theSample = `cls${whichSound}.flac`;
+  console.log(`theSample = ${theSample}`);
+  console.log(`usedSounds = ${usedSounds}`);
+
+  assignSoundToPlayer();
+}
+
+function haveWeUsedSound(comparer) {
+  for(var i=0; i < usedSounds.length; i++) {
+      if(usedSounds[i] === comparer){
+          return true;
+      }
+  }
+  return false;
+};
+
+function assignSoundToPlayer() {
+  if(bufferToPlay === buffer1){
+      buffer0 = new Tone.ToneAudioBuffer(`/assets/${theSample}`, () => {
+          console.log("buffer 0 loaded");
+          bufferToPlay = buffer0;
+          currentBuffer = 0;
+          console.log(`currentBuffer = ${currentBuffer}`);
+          if (interfaceState === 0){
+              reload();
+          }
+      },
+      () => {
+          interfaceState = 3;
+          console.log(`interfaceState = ${interfaceState}`)
+      });
+  }else{
+      buffer1 = new Tone.ToneAudioBuffer(`/assets/${theSample}`, () => {
+          console.log("buffer 1 loaded");
+          bufferToPlay = buffer1;
+          currentBuffer = 1;
+          console.log(`currentBuffer = ${currentBuffer}`);
+          if (interfaceState === 0){
+              reload();
+          }
+      },
+      () => {
+          interfaceState = 3;
+          console.log(`interfaceState = ${interfaceState}`)
+      });
+  }
+}
+
+function reload() {
+  buildText();
+  makeSquare();
+  console.log(`in reload`);
+  if(lastBuffer !== currentBuffer){
+      player.buffer = bufferToPlay.get();
+      interfaceState = 1;
+  }else{
+      interfaceState = 0;
+  }
+  // buffer0.dispose();
+  // chooseSample();
 }
