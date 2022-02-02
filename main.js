@@ -129,7 +129,6 @@ function draw() {
       }
     }else if(interfaceState === 3){
       noStroke();
-      fill(buttonColour);
       fill(0);
       textAlign(CENTER, CENTER);
       textSize(cnvDimension/30);
