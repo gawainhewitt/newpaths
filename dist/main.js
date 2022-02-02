@@ -135,10 +135,14 @@ function draw() {
       textSize(cnvDimension/30);
       text("Network Problems, click to try again", visualisationX, visualisationY);
     }
-  }else{
+  }else if(welcome == 0){
     background(230);
     textAlign(CENTER, CENTER);
-    text(`welcome screen ${welcome+1}`, width/2, height/2);
+    text("New Paths", width/2, height/2);
+  }else if(welcome == 1){
+    background(230);
+    textAlign(TOP, TOP)
+    text("A Sound Installation by Gawain Hewitt for City of London Sinfonia", width/2, height/2, width/2, height/2);
   }
 }
 
